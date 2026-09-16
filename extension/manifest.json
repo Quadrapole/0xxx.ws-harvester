@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "release-harvest",
+  "version": "1.9",
+  "icons": { "128": "icon128.png" },
+  "description": "Ctrl+Shift+H arm window (screen-caps + captchas). Ctrl+Shift+U send links (rg probed, dead→k2s). Per-tab: c arm, s copy.",
+// Ctrl+Alt+H on Linux = AltGr+H, which Chrome rejects; use Ctrl+Shift+H.
+// Ctrl+Shift+S is grabbed by KDE/Spectacle (screen capture) before Brave; Ctrl+Shift+U is free.
+  "permissions": ["tabs", "scripting", "notifications"],
+  "host_permissions": [
+    "https://0xxx.ws/*",
+    "https://0xxx.st/*",
+    "https://0xxx.me/*",
+    "https://imagetwist.com/*",
+    "https://rapidgator.net/*",
+    "http://127.0.0.1:3128/*"
+  ],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://0xxx.ws/articles/*",
+        "https://0xxx.st/articles/*",
+        "https://0xxx.me/articles/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://imagetwist.com/*",
+        "https://www.imagetwist.com/*"
+      ],
+      "js": ["interstitial.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "commands": {
+    "arm-window": {
+      "suggested_key": { "default": "Ctrl+Shift+H" },
+      "description": "Harvest whole window: open screen-cap next to each article tab + arm captcha"
+    },
+    "send-links": {
+      "suggested_key": { "default": "Ctrl+Shift+U" },
+      "description": "Send all revealed rapidgator/k2s links in this window to JDownloader (3128)"
+    }
+  }
+}
