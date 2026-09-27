@@ -1,4 +1,4 @@
-// 0xxx harvest — window-wide sweeps (Ctrl+Shift+E open, X arm, U send)
+// 0xxx harvest — window-wide sweeps (Ctrl+Shift+E open, F arm, U send)
 const ARTICLE = /0xxx\.(ws|st|me)\/articles\//;
 
 const findThumb = () => {

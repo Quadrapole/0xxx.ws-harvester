@@ -8,7 +8,7 @@ Browsing a release site whose download links sit behind an hCaptcha ("Show downl
 
 1. Open the article tabs you want in one browser window.
 2. **Ctrl+Shift+E** → every article tab gets its preview/screenshot in a tab directly to its **left** (preview freely — nothing is armed yet).
-3. **Ctrl+Shift+X** → the download button is clicked on every article tab, arming all captchas (modal appears ~8–10 s after the click).
+3. **Ctrl+Shift+F** → the download button is clicked on every article tab, arming all captchas (modal appears ~8–10 s after the click).
 4. Solve the captchas (a solved tab's URL gains `#show`).
 5. **Ctrl+Shift+U** → revealed rapidgator links are probed live, dead ones auto-swapped for their k2s twin, and the survivors are pushed to JDownloader on the LAN → desktop notification: *"N link(s) → JD ✓"*.
 
@@ -153,7 +153,7 @@ Install: save the folder below → `brave://extensions` / `chrome://extensions` 
   "manifest_version": 3,
   "name": "release-harvest",
   "version": "2.1",
-  "description": "Ctrl+Shift+E open screen-caps for all article tabs, Ctrl+Shift+X arm downloads, Ctrl+Shift+U send links (rg probed, dead→k2s).",
+  "description": "Ctrl+Shift+E open screen-caps for all article tabs, Ctrl+Shift+F arm downloads, Ctrl+Shift+U send links (rg probed, dead→k2s).",
   "icons": { "128": "icon128.png" },
   "permissions": ["tabs", "scripting", "notifications"],
   "host_permissions": [
@@ -178,7 +178,7 @@ Install: save the folder below → `brave://extensions` / `chrome://extensions` 
       "description": "Open a screen-cap tab next to every article tab in this window"
     },
     "arm-window": {
-      "suggested_key": { "default": "Ctrl+Shift+X" },
+      "suggested_key": { "default": "Ctrl+Shift+F" },
       "description": "Arm the download/captcha on every article tab in this window"
     },
     "send-links": {
@@ -188,7 +188,7 @@ Install: save the folder below → `brave://extensions` / `chrome://extensions` 
   }
 }
 ```
-**Hotkey gotchas:** `Ctrl+Alt+<letter>` is **invalid in Chrome command manifests on Linux** (normalized to AltGr+letter, extension refuses to load with `Invalid value for 'commands[…]'`). Desktop environments pre-grab some chords before the browser ever sees them — KDE's Spectacle owns `Ctrl+Shift+S` (screen capture). And **Brave/Chrome never assign their own defaults to extension commands**: `Ctrl+Shift+O` (Bookmark manager), `Ctrl+Shift+A` (Search tabs), `Ctrl+Shift+L` and `Ctrl+Shift+P` all come back with *empty* bindings from `chrome.commands.getAll()` — verified empirically. `E`, `X`, `U`, `K`, `F` do get assigned. Rebind everything at `brave://extensions/shortcuts`.
+**Hotkey gotchas:** `Ctrl+Alt+<letter>` is **invalid in Chrome command manifests on Linux** (normalized to AltGr+letter, extension refuses to load with `Invalid value for 'commands[…]'`). Desktop environments pre-grab some chords before the browser ever sees them — KDE's Spectacle owns `Ctrl+Shift+S` (screen capture). And **Brave/Chrome never assign their own defaults to extension commands**: `Ctrl+Shift+O` (Bookmark manager), `Ctrl+Shift+A` (Search tabs), `Ctrl+Shift+L` and `Ctrl+Shift+P` all come back with *empty* bindings from `chrome.commands.getAll()` — verified empirically. `E`, `F`, `U`, `K`, `X` come back assigned — but `X` later turned out runtime-eaten on the live desktop (never fired), so `getAll` assignment is necessary, not sufficient. Rebind everything at `brave://extensions/shortcuts`.
 
 ### `background.js`  *(set `JD_HOST`)*
 ```javascript
@@ -393,6 +393,6 @@ Any 128×128 PNG (notifications require an icon; ours is a solid teal circle gen
 2. `curl http://<JD-HOST>:3128/device/ping?rid=1` → `{"data":true}`.
 3. Install the relay (**Part 1h**) and start it.
 4. Save the JS files + a PNG icon, set `JD_HOST` + your site matchers, Load unpacked.
-5. Open some article tabs → **Ctrl+Shift+E** (caps) → **Ctrl+Shift+X** (arm) → solve → **Ctrl+Shift+U** → watch it hit JDownloader (dead rapidgator links auto-swap to their k2s twin).
+5. Open some article tabs → **Ctrl+Shift+E** (caps) → **Ctrl+Shift+F** (arm) → solve → **Ctrl+Shift+U** → watch it hit JDownloader (dead rapidgator links auto-swap to their k2s twin).
 
 *Before the extension existed, all of this ran through an AI browser agent driving the same DOM clicks in a three-stage protocol (arm → solve → deliver). The extension is just the parts of that protocol that never needed a brain.*
