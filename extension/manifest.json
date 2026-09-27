@@ -1,11 +1,12 @@
 {
   "manifest_version": 3,
   "name": "release-harvest",
-  "version": "2.0",
+  "version": "2.1",
   "icons": { "128": "icon128.png" },
-  "description": "Ctrl+Shift+H arm window, Ctrl+Shift+U send links (rg probed, dead→k2s). Per-tab: o open cap, d arm, c both, s copy.",
-// Ctrl+Alt+H on Linux = AltGr+H, which Chrome rejects; use Ctrl+Shift+H.
-// Ctrl+Shift+S is grabbed by KDE/Spectacle (screen capture) before Brave; Ctrl+Shift+U is free.
+  "description": "Ctrl+Shift+E open screen-caps for all article tabs, Ctrl+Shift+X arm downloads, Ctrl+Shift+U send links (rg probed, dead→k2s).",
+// Ctrl+Alt+letter is invalid in Chrome command manifests on Linux (AltGr).
+// Reserved, never assigned to extensions: Ctrl+Shift+S (KDE/Spectacle), O, A, L, P.
+// Verified free in Brave: E, X, U (K, F also free).
   "permissions": ["tabs", "scripting", "notifications"],
   "host_permissions": [
     "https://0xxx.ws/*",
@@ -19,15 +20,6 @@
   "content_scripts": [
     {
       "matches": [
-        "https://0xxx.ws/articles/*",
-        "https://0xxx.st/articles/*",
-        "https://0xxx.me/articles/*"
-      ],
-      "js": ["content.js"],
-      "run_at": "document_idle"
-    },
-    {
-      "matches": [
         "https://imagetwist.com/*",
         "https://www.imagetwist.com/*"
       ],
@@ -36,9 +28,13 @@
     }
   ],
   "commands": {
+    "open-window": {
+      "suggested_key": { "default": "Ctrl+Shift+E" },
+      "description": "Open a screen-cap tab next to every article tab in this window"
+    },
     "arm-window": {
-      "suggested_key": { "default": "Ctrl+Shift+H" },
-      "description": "Harvest whole window: open screen-cap next to each article tab + arm captcha"
+      "suggested_key": { "default": "Ctrl+Shift+X" },
+      "description": "Arm the download/captcha on every article tab in this window"
     },
     "send-links": {
       "suggested_key": { "default": "Ctrl+Shift+U" },

@@ -1,4 +1,4 @@
-// 0xxx harvest — window-wide arm sweep (Ctrl+Alt+H)
+// 0xxx harvest — window-wide sweeps (Ctrl+Shift+E open, X arm, U send)
 const ARTICLE = /0xxx\.(ws|st|me)\/articles\//;
 
 const findThumb = () => {
@@ -19,7 +19,7 @@ const clickDownload = () => {
   return "no-button";
 };
 
-async function armWindow() {
+async function openWindow() {
   const win = await chrome.windows.getLastFocused({ populate: true });
   const articles = win.tabs
     .filter((t) => ARTICLE.test(t.url || ""))
@@ -41,17 +41,32 @@ async function armWindow() {
         });
         inserted++;
       }
+    } catch (e) {
+      console.warn("0xxx harvest: open failed", t.id, e);
+    }
+  }
+  notify("ohx-open", "release-harvest", inserted + " screen-cap tab(s) opened");
+}
+
+async function armWindow() {
+  const win = await chrome.windows.getLastFocused({ populate: true });
+  const articles = win.tabs.filter((t) => ARTICLE.test(t.url || ""));
+  let armed = 0;
+  for (const t of articles) {
+    try {
       await chrome.scripting.executeScript({
         target: { tabId: t.id },
         func: clickDownload,
       });
+      armed++;
     } catch (e) {
-      console.warn("0xxx harvest: tab failed", t.id, e);
+      console.warn("0xxx harvest: arm failed", t.id, e);
     }
-    // no pacing delay — single-tab arm proved back-to-back is fine; watch for swallowed modals
+    // no pacing delay — single-tab arm proved back-to-back is fine
   }
   // bring focus back to the first article tab so solving starts immediately
   if (articles.length) chrome.tabs.update(articles[0].id, { active: true });
+  notify("ohx-arm", "release-harvest", armed + " tab(s) armed ✓ (modals render ~8-10s)");
 }
 
 // Browser fetches always carry Origin, which JD's 3128 rejects outright —
@@ -166,6 +181,7 @@ async function sendLinks() {
 }
 
 chrome.commands.onCommand.addListener((cmd) => {
+  if (cmd === "open-window") openWindow();
   if (cmd === "arm-window") armWindow();
   if (cmd === "send-links") sendLinks();
 });

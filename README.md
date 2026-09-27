@@ -7,9 +7,10 @@
 Browsing a release site whose download links sit behind an hCaptcha ("Show download links" → captcha → revealed rapidgator/k2s links), normally a click-fest per release. Now the entire nightly session is **two hotkeys and the captcha solves themselves to you**:
 
 1. Open the article tabs you want in one browser window.
-2. **Ctrl+Shift+H** → for every article tab: its preview/screenshot opens in a tab directly beside it, and its captcha auto-arms (modal appears ~8–10 s after the click).
-3. Solve the captchas (a solved tab's URL gains `#show`).
-4. **Ctrl+Shift+U** → revealed rapidgator links are probed live, dead ones auto-swapped for their k2s twin, and the survivors are pushed to JDownloader on the LAN → desktop notification: *"N link(s) → JD ✓"*.
+2. **Ctrl+Shift+E** → every article tab gets its preview/screenshot in a tab directly beside it (preview freely — nothing is armed yet).
+3. **Ctrl+Shift+X** → the download button is clicked on every article tab, arming all captchas (modal appears ~8–10 s after the click).
+4. Solve the captchas (a solved tab's URL gains `#show`).
+5. **Ctrl+Shift+U** → revealed rapidgator links are probed live, dead ones auto-swapped for their k2s twin, and the survivors are pushed to JDownloader on the LAN → desktop notification: *"N link(s) → JD ✓"*.
 
 No right-click senders, no clipboard, no download-manager window. The human only solves captchas.
 
@@ -142,7 +143,7 @@ WantedBy=default.target
 
 ## Part 2 — The browser extension (unpacked MV3)
 
-A **userscript alone can never do this**: user scripts live per-tab and can't enumerate or operate sibling tabs (that discovery is what forced the extension). A userscript *can* still serve as a per-tab "arm this one" hotkey — see appendix.
+A **userscript alone can never do this**: user scripts live per-tab and can't enumerate or operate sibling tabs (that discovery is what forced the extension).
 
 Install: save the folder below → `brave://extensions` / `chrome://extensions` → enable **Developer mode** → **Load unpacked** → pick the folder. (Re-click ↻ on the extension after any file edit.)
 
@@ -151,8 +152,8 @@ Install: save the folder below → `brave://extensions` / `chrome://extensions` 
 {
   "manifest_version": 3,
   "name": "release-harvest",
-  "version": "2.0",
-  "description": "Ctrl+Shift+H arm window, Ctrl+Shift+U send links (rg probed, dead→k2s). Per-tab: o open cap, d arm, c both, s copy.",
+  "version": "2.1",
+  "description": "Ctrl+Shift+E open screen-caps for all article tabs, Ctrl+Shift+X arm downloads, Ctrl+Shift+U send links (rg probed, dead→k2s).",
   "icons": { "128": "icon128.png" },
   "permissions": ["tabs", "scripting", "notifications"],
   "host_permissions": [
@@ -166,24 +167,19 @@ Install: save the folder below → `brave://extensions` / `chrome://extensions` 
   "background": { "service_worker": "background.js" },
   "content_scripts": [
     {
-      "matches": [
-        "https://0xxx.ws/articles/*",
-        "https://0xxx.st/articles/*",
-        "https://0xxx.me/articles/*"
-      ],
-      "js": ["content.js"],
-      "run_at": "document_idle"
-    },
-    {
       "matches": ["https://imagetwist.com/*", "https://www.imagetwist.com/*"],
       "js": ["interstitial.js"],
       "run_at": "document_idle"
     }
   ],
   "commands": {
+    "open-window": {
+      "suggested_key": { "default": "Ctrl+Shift+E" },
+      "description": "Open a screen-cap tab next to every article tab in this window"
+    },
     "arm-window": {
-      "suggested_key": { "default": "Ctrl+Shift+H" },
-      "description": "Open screen-cap next to each article tab + arm captcha"
+      "suggested_key": { "default": "Ctrl+Shift+X" },
+      "description": "Arm the download/captcha on every article tab in this window"
     },
     "send-links": {
       "suggested_key": { "default": "Ctrl+Shift+U" },
@@ -192,7 +188,7 @@ Install: save the folder below → `brave://extensions` / `chrome://extensions` 
   }
 }
 ```
-**Hotkey gotchas:** `Ctrl+Alt+<letter>` is **invalid in Chrome command manifests on Linux** (normalized to AltGr+letter, extension refuses to load with `Invalid value for 'commands[…]'`). And desktop environments pre-grab some chords before the browser ever sees them — KDE's Spectacle owns `Ctrl+Shift+S` (screen capture), which is why send uses `Ctrl+Shift+U`. Rebind everything at `brave://extensions/shortcuts`.
+**Hotkey gotchas:** `Ctrl+Alt+<letter>` is **invalid in Chrome command manifests on Linux** (normalized to AltGr+letter, extension refuses to load with `Invalid value for 'commands[…]'`). Desktop environments pre-grab some chords before the browser ever sees them — KDE's Spectacle owns `Ctrl+Shift+S` (screen capture). And **Brave/Chrome never assign their own defaults to extension commands**: `Ctrl+Shift+O` (Bookmark manager), `Ctrl+Shift+A` (Search tabs), `Ctrl+Shift+L` and `Ctrl+Shift+P` all come back with *empty* bindings from `chrome.commands.getAll()` — verified empirically. `E`, `X`, `U`, `K`, `F` do get assigned. Rebind everything at `brave://extensions/shortcuts`.
 
 ### `background.js`  *(set `JD_HOST`)*
 ```javascript
@@ -341,85 +337,7 @@ chrome.commands.onCommand.addListener((cmd) => {
 ```
 *(Index math note: newly inserted tabs shift later tabs right — the `inserted` counter keeps every screenshot adjacent to its article.)*
 
-### `content.js`  *(per-tab hotkeys: `o` open cap, `d` arm download, `c` both, `s` copy)*
-```javascript
-(function () {
-  "use strict";
-  const root = document.documentElement;
-  if (root.dataset.ohx === "1") return; // duplicate guard (e.g. userscript also present)
-  root.dataset.ohx = "1";
-
-  function thumb() {
-    const all = [...document.querySelectorAll("a[href]")];
-    return (
-      all.find((a) => /imagetwist|imageban|picsextra|imgbox|imgclick/i.test(a.href)) ||
-      document.querySelector("table a[target='_blank']") || null
-    );
-  }
-  function dlButton() {
-    return document.querySelector("form button") ||
-      [...document.querySelectorAll("button, input[type=submit]")].find((b) =>
-        /show download/i.test(b.textContent || b.value || "")) || null;
-  }
-  function hosterLinks() {
-    const cell =
-      [...document.querySelectorAll("td, th")].find((c) =>
-        /download links/i.test(c.textContent || ""))
-        ?.parentElement?.querySelectorAll("td")[1] || document.body;
-    const m = cell.textContent.match(/https?:\/\/(rapidgator\.net|k2s\.cc)\/\S+/g) || [];
-    return [...new Set(m.map((u) => u.replace(/[.,;)]+$/, "")))];
-  }
-  function openCap() {
-    const a = thumb();
-    if (!a) { flash("no screen-cap found ✗"); return false; }
-    // REAL <a target=_blank> click piggybacks the keypress gesture —
-    // window.open() gets popup-blocked (see lessons).
-    const link = document.createElement("a");
-    link.href = a.href; link.target = "_blank"; link.rel = "noreferrer";
-    link.style.display = "none";
-    document.body.appendChild(link); link.click(); link.remove();
-    flash("screen-cap: " + a.href.split("/")[2]);
-    return true;
-  }
-  function armDownload() {
-    const b = dlButton();
-    if (b) {
-      setTimeout(() => b.click(), 300);
-      flash("download armed ✓ (modal renders ~8-10s)");
-    } else flash("no download button ✗");
-  }
-  function openAndArm() { openCap(); armDownload(); }
-  function copyLinks() {
-    const us = hosterLinks();
-    if (us.length) {
-      navigator.clipboard.writeText(us.join("\n"));
-      flash("copied " + us.length + " link(s) ✓");
-    } else flash("no links visible — captcha solved?");
-  }
-  let toast;
-  function flash(msg) {
-    if (!toast) {
-      toast = document.createElement("div");
-      toast.style.cssText =
-        "position:fixed;z-index:999999;right:12px;bottom:12px;padding:8px 14px;" +
-        "background:#0f766e;color:#fff;font:13px/1.4 system-ui;border-radius:8px;" +
-        "box-shadow:0 2px 10px rgba(0,0,0,.4);max-width:60vw";
-      document.body.appendChild(toast);
-    }
-    toast.textContent = msg; toast.style.display = "block";
-    clearTimeout(toast._t);
-    toast._t = setTimeout(() => (toast.style.display = "none"), 3500);
-  }
-  document.addEventListener("keydown", (e) => {
-    if (e.target.closest("input,textarea,select")) return;
-    if (e.metaKey || e.ctrlKey || e.altKey) return;
-    if (e.key === "o") { e.preventDefault(); openCap(); }
-    if (e.key === "d") { e.preventDefault(); armDownload(); }
-    if (e.key === "c") { e.preventDefault(); openAndArm(); }
-    if (e.key === "s") { e.preventDefault(); copyLinks(); }
-  }, true);
-})();
-```
+*(v2.1 removed all per-tab hotkeys at the owner's request — the sweeps are window-level `commands`; `content.js` no longer exists.)*
 
 ### `interstitial.js`  *(image-host ad wall)*
 ```javascript
@@ -462,6 +380,6 @@ Any 128×128 PNG (notifications require an icon; ours is a solid teal circle gen
 2. `curl http://<JD-HOST>:3128/device/ping?rid=1` → `{"data":true}`.
 3. Install the relay (**Part 1h**) and start it.
 4. Save the JS files + a PNG icon, set `JD_HOST` + your site matchers, Load unpacked.
-5. Open some article tabs → **Ctrl+Shift+H** → solve → **Ctrl+Shift+U** → watch it hit JDownloader (dead rapidgator links auto-swap to their k2s twin).
+5. Open some article tabs → **Ctrl+Shift+E** (caps) → **Ctrl+Shift+X** (arm) → solve → **Ctrl+Shift+U** → watch it hit JDownloader (dead rapidgator links auto-swap to their k2s twin).
 
 *Before the extension existed, all of this ran through an AI browser agent driving the same DOM clicks in a three-stage protocol (arm → solve → deliver). The extension is just the parts of that protocol that never needed a brain.*
