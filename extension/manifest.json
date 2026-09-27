@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "release-harvest",
-  "version": "2.3",
+  "version": "2.4",
   "icons": { "128": "icon128.png" },
-  "description": "Ctrl+Shift+E open screen-caps for all article tabs, Ctrl+Shift+K arm downloads, Ctrl+Shift+U send links (rg probed, dead→k2s).",
+  "description": "Ctrl+Shift+E open screen-caps for all article tabs, Ctrl+Shift+F arm downloads, Ctrl+Shift+U send links (rg probed, dead→k2s).",
 // Ctrl+Alt+letter is invalid in Chrome command manifests on Linux (AltGr).
 // Reserved, never assigned to extensions: Ctrl+Shift+S (KDE/Spectacle), O, A, L, P.
 // Verified free in Brave: E, X, U (K, F also free).
@@ -33,7 +33,7 @@
       "description": "Open a screen-cap tab next to every article tab in this window"
     },
     "arm-window": {
-      "suggested_key": { "default": "Ctrl+Shift+K" },
+      "suggested_key": { "default": "Ctrl+Shift+F" },
       "description": "Arm the download/captcha on every article tab in this window"
     },
     "send-links": {
