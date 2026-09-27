@@ -7,7 +7,7 @@
 Browsing a release site whose download links sit behind an hCaptcha ("Show download links" → captcha → revealed rapidgator/k2s links), normally a click-fest per release. Now the entire nightly session is **two hotkeys and the captcha solves themselves to you**:
 
 1. Open the article tabs you want in one browser window.
-2. **Ctrl+Shift+E** → every article tab gets its preview/screenshot in a tab directly beside it (preview freely — nothing is armed yet).
+2. **Ctrl+Shift+E** → every article tab gets its preview/screenshot in a tab directly to its **left** (preview freely — nothing is armed yet).
 3. **Ctrl+Shift+X** → the download button is clicked on every article tab, arming all captchas (modal appears ~8–10 s after the click).
 4. Solve the captchas (a solved tab's URL gains `#show`).
 5. **Ctrl+Shift+U** → revealed rapidgator links are probed live, dead ones auto-swapped for their k2s twin, and the survivors are pushed to JDownloader on the LAN → desktop notification: *"N link(s) → JD ✓"*.
@@ -218,7 +218,7 @@ const clickDownload = () => {
   return "no-button";
 };
 
-async function armWindow() {
+async function openWindow() {
   const win = await chrome.windows.getLastFocused({ populate: true });
   const articles = win.tabs
     .filter((t) => ARTICLE.test(t.url || ""))
@@ -230,20 +230,33 @@ async function armWindow() {
         target: { tabId: t.id }, func: findThumb,
       });
       if (thumb && thumb.result) {
-        // screen-cap tab directly to the right of its article tab
+        // screen-cap tab directly to the LEFT of its article tab
         await chrome.tabs.create({
-          windowId: win.id, index: t.index + 1 + inserted,
+          windowId: win.id, index: t.index + inserted,
           url: thumb.result, active: false,
         });
         inserted++;
       }
+    } catch (e) { console.warn("harvest: open failed", t.id, e); }
+  }
+  notify("open", "release-harvest", inserted + " screen-cap tab(s) opened");
+}
+
+async function armWindow() {
+  const win = await chrome.windows.getLastFocused({ populate: true });
+  const articles = win.tabs.filter((t) => ARTICLE.test(t.url || ""));
+  let armed = 0;
+  for (const t of articles) {
+    try {
       await chrome.scripting.executeScript({
         target: { tabId: t.id }, func: clickDownload,
       });
-    } catch (e) { console.warn("harvest: tab failed", t.id, e); }
+      armed++;
+    } catch (e) { console.warn("harvest: arm failed", t.id, e); }
     // no pacing needed — see "lessons" (back-to-back arming verified)
   }
   if (articles.length) chrome.tabs.update(articles[0].id, { active: true });
+  notify("arm", "release-harvest", armed + " tab(s) armed ✓ (modals render ~8-10s)");
 }
 
 function notify(id, title, msg) {

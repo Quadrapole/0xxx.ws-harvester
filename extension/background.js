@@ -32,10 +32,10 @@ async function openWindow() {
         func: findThumb,
       });
       if (thumb && thumb.result) {
-        // screen-cap tab directly to the right of its article tab
+        // screen-cap tab directly to the LEFT of its article tab
         await chrome.tabs.create({
           windowId: win.id,
-          index: t.index + 1 + inserted,
+          index: t.index + inserted,
           url: thumb.result,
           active: false,
         });
