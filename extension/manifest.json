@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "release-harvest",
-  "version": "1.9",
+  "version": "2.0",
   "icons": { "128": "icon128.png" },
-  "description": "Ctrl+Shift+H arm window (screen-caps + captchas). Ctrl+Shift+U send links (rg probed, dead→k2s). Per-tab: c arm, s copy.",
+  "description": "Ctrl+Shift+H arm window, Ctrl+Shift+U send links (rg probed, dead→k2s). Per-tab: o open cap, d arm, c both, s copy.",
 // Ctrl+Alt+H on Linux = AltGr+H, which Chrome rejects; use Ctrl+Shift+H.
 // Ctrl+Shift+S is grabbed by KDE/Spectacle (screen capture) before Brave; Ctrl+Shift+U is free.
   "permissions": ["tabs", "scripting", "notifications"],

@@ -151,8 +151,8 @@ Install: save the folder below → `brave://extensions` / `chrome://extensions` 
 {
   "manifest_version": 3,
   "name": "release-harvest",
-  "version": "1.9",
-  "description": "Ctrl+Shift+H arm window (screen-caps + captchas). Ctrl+Shift+U send links (rg probed, dead→k2s). Per-tab: c arm, s copy.",
+  "version": "2.0",
+  "description": "Ctrl+Shift+H arm window, Ctrl+Shift+U send links (rg probed, dead→k2s). Per-tab: o open cap, d arm, c both, s copy.",
   "icons": { "128": "icon128.png" },
   "permissions": ["tabs", "scripting", "notifications"],
   "host_permissions": [
@@ -341,7 +341,7 @@ chrome.commands.onCommand.addListener((cmd) => {
 ```
 *(Index math note: newly inserted tabs shift later tabs right — the `inserted` counter keeps every screenshot adjacent to its article.)*
 
-### `content.js`  *(per-tab `c` / `s` hotkeys)*
+### `content.js`  *(per-tab hotkeys: `o` open cap, `d` arm download, `c` both, `s` copy)*
 ```javascript
 (function () {
   "use strict";
@@ -369,20 +369,26 @@ chrome.commands.onCommand.addListener((cmd) => {
     const m = cell.textContent.match(/https?:\/\/(rapidgator\.net|k2s\.cc)\/\S+/g) || [];
     return [...new Set(m.map((u) => u.replace(/[.,;)]+$/, "")))];
   }
-  function openAndArm() {
+  function openCap() {
     const a = thumb();
-    if (a) {
-      // REAL <a target=_blank> click piggybacks the keypress gesture —
-      // window.open() gets popup-blocked (see lessons).
-      const link = document.createElement("a");
-      link.href = a.href; link.target = "_blank"; link.rel = "noreferrer";
-      link.style.display = "none";
-      document.body.appendChild(link); link.click(); link.remove();
-      flash("screen-cap: " + a.href.split("/")[2]);
-    } else flash("no screen-cap found ✗");
-    const b = dlButton();
-    if (b) setTimeout(() => b.click(), 300); else flash("no download button ✗");
+    if (!a) { flash("no screen-cap found ✗"); return false; }
+    // REAL <a target=_blank> click piggybacks the keypress gesture —
+    // window.open() gets popup-blocked (see lessons).
+    const link = document.createElement("a");
+    link.href = a.href; link.target = "_blank"; link.rel = "noreferrer";
+    link.style.display = "none";
+    document.body.appendChild(link); link.click(); link.remove();
+    flash("screen-cap: " + a.href.split("/")[2]);
+    return true;
   }
+  function armDownload() {
+    const b = dlButton();
+    if (b) {
+      setTimeout(() => b.click(), 300);
+      flash("download armed ✓ (modal renders ~8-10s)");
+    } else flash("no download button ✗");
+  }
+  function openAndArm() { openCap(); armDownload(); }
   function copyLinks() {
     const us = hosterLinks();
     if (us.length) {
@@ -407,6 +413,8 @@ chrome.commands.onCommand.addListener((cmd) => {
   document.addEventListener("keydown", (e) => {
     if (e.target.closest("input,textarea,select")) return;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === "o") { e.preventDefault(); openCap(); }
+    if (e.key === "d") { e.preventDefault(); armDownload(); }
     if (e.key === "c") { e.preventDefault(); openAndArm(); }
     if (e.key === "s") { e.preventDefault(); copyLinks(); }
   }, true);

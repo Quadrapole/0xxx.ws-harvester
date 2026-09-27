@@ -1,4 +1,6 @@
-// 0xxx harvest — per-tab hotkeys (c = arm this tab, s = copy links)
+// 0xxx harvest — per-tab hotkeys
+// o = open screen-cap only | d = activate download (arm captcha) only
+// c = both | s = copy revealed links
 (function () {
   "use strict";
   const root = document.documentElement;
@@ -33,24 +35,37 @@
     return [...new Set(m.map((u) => u.replace(/[.,;)]+$/, "")))];
   }
 
-  function openAndArm() {
+  function openCap() {
     const a = thumb();
-    if (a) {
-      const link = document.createElement("a");
-      link.href = a.href;
-      link.target = "_blank";
-      link.rel = "noreferrer";
-      link.style.display = "none";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      flash("screen-cap: " + a.href.split("/")[2]);
-    } else {
+    if (!a) {
       flash("no screen-cap found ✗");
+      return false;
     }
+    const link = document.createElement("a");
+    link.href = a.href;
+    link.target = "_blank";
+    link.rel = "noreferrer";
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    flash("screen-cap: " + a.href.split("/")[2]);
+    return true;
+  }
+
+  function armDownload() {
     const b = dlButton();
-    if (b) setTimeout(() => b.click(), 300);
-    else flash("no download button ✗");
+    if (b) {
+      setTimeout(() => b.click(), 300);
+      flash("download armed ✓ (modal renders ~8-10s)");
+    } else {
+      flash("no download button ✗");
+    }
+  }
+
+  function openAndArm() {
+    openCap();
+    armDownload();
   }
 
   function copyLinks() {
@@ -84,6 +99,8 @@
     (e) => {
       if (e.target.closest("input,textarea,select")) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === "o") { e.preventDefault(); openCap(); }
+      if (e.key === "d") { e.preventDefault(); armDownload(); }
       if (e.key === "c") { e.preventDefault(); openAndArm(); }
       if (e.key === "s") { e.preventDefault(); copyLinks(); }
     },
